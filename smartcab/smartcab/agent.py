@@ -56,7 +56,18 @@ class LearningAgent(Agent):
         ## TO DO ##
         ###########
         # Set 'state' as a tuple of relevant data for the agent        
-        state = None
+        state = (
+            waypoint,
+            inputs['light'],
+            inputs['left'],
+            inputs['oncoming']
+        )
+        
+        # When learning, check if the state is in the Q-table
+        #   If it is not, create a dictionary in the Q-table for the current 'state'
+        #   For each action, set the Q-value for the state-action pair to 0
+        if self.learning and state not in self.Q:
+            self.Q[state] = self.default_dict()
 
         return state
 

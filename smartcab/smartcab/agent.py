@@ -71,7 +71,14 @@ class LearningAgent(Agent):
 
         return state
 
-
+    def default_dict(self):
+        return dict({
+            'left': 0.0,
+            'right': 0.0,
+            'forward': 0.0,
+            None: 0.0
+        })
+        
     def get_maxQ(self, state):
         """ The get_max_Q function is called when the agent is asked to find the
             maximum Q-value of all actions based on the 'state' the smartcab is in. """

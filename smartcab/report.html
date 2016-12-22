@@ -11867,7 +11867,8 @@ div#notebook {
 <h1 id="Does-the-Smartcab-move-at-all-during-the-simulation?">Does the Smartcab move at all during the simulation?<a class="anchor-link" href="#Does-the-Smartcab-move-at-all-during-the-simulation?">&#182;</a></h1><p>The Smartcab did't move at all.</p>
 <h1 id="What-kind-of-rewards-is-the-driving-agent-receiving?">What kind of rewards is the driving agent receiving?<a class="anchor-link" href="#What-kind-of-rewards-is-the-driving-agent-receiving?">&#182;</a></h1><p>Throughaout the process driver was't moving anyware. So it was rewarding positive numbers when signal was RED and negative when signal was GREEN. <br/>
 The absolute value of rewards depends on the nearby traffic.</p>
-<h1 id="How-does-the-light-changing-color-affect-the-rewards?">How does the light changing color affect the rewards?<a class="anchor-link" href="#How-does-the-light-changing-color-affect-the-rewards?">&#182;</a></h1><p>Assuming that here light means the color of trafic signal light. When the color was RED agent was rewarded with a random positive number and when it was GREEN it was rewarded as negative number because the cab was't moving on green signal.</p>
+<h1 id="How-does-the-light-changing-color-affect-the-rewards?">How does the light changing color affect the rewards?<a class="anchor-link" href="#How-does-the-light-changing-color-affect-the-rewards?">&#182;</a></h1><p>Assuming that here light means the color of trafic signal light. When the color was RED agent was rewarded with a random positive number and when it was GREEN it was rewarded as negative number because the cab was't moving on green signal while it was safe to move on green.</p>
+<p>So the reward would be positive when light is green with other traffic and negative when light is green with no traffic.</p>
 <hr style=" height: 5px;   border-style: solid;   border-color: #8c8b8b;   border-width: 1px 0 0 0;   border-radius: 20px; "/>
 </div>
 </div>
@@ -19098,22 +19099,28 @@ The learning rate I chose was 0.6. I chose this by holding the episilon-toleranc
 <hr style=" height: 5px;   border-style: solid;   border-color: #8c8b8b;   border-width: 1px 0 0 0;   border-radius: 20px; "/>
 
 <p><strong>states's key touple:</strong> ('direction of finish', 'light_color', 'left traffic', 'oncoming traffic')
-<br/></p>
+<br/>
+Below are samples from Q learning. I have picked one example for optimal policy and one for sub-optimal policy.<br/></p>
+<p><strong>Optimal policy</strong></p>
 <p><pre>
-('left', 'red', None, 'right', 'left')
- -- forward : 0.00
- -- right : 0.00
- -- None : 1.29
- -- left : 0.00
-The policy in this case is to stay idle. This is the correct policy, as the car should stop at a red light in order to avoid a traffic violation (and thus a negative reward). One could make the case for running a red light if it meant getting to the goal before the time runs out, but since we did not include time-left in our state the cab has no way of knowing whether it is close to running out or not, so this will be the right decision with any states given.
-Any incorrect policies?:
-('forward', 'green', None, None, 'right')
- -- forward : 0.00
- -- right : 0.84
- -- None : 0.00
- -- left : -19.92
-This is an example of a policy that might be suboptimal. The light is green and the direction of the targert is forward and the car to the left is turning right. In this case, we aren't in any danger if we go forward but the policy tells us to go right. I would expect that going forward would be better as we would get closer to our destination.</p>
-<p>&lt;/pre&gt;</p>
+('right', 'red', None, 'left')
+ -- forward : -9.99
+ -- right : 1.29
+ -- None : 1.53
+ -- left : -10.56
+ </pre>
+ Above is an example of an Optimal policy where agent decide to stay Ideal because the oncoming traffic is turning left.<br/><br/></p>
+<p><strong>Sub Optimal policy</strong></p>
+<p><pre>
+('right', 'green', 'forward', 'right')
+ -- forward : 0.15
+ -- right : 1.39
+ -- None : -2.48
+ -- left : -12.00
+ </pre>
+The policy for above state is not optimal as we can see that the agent is deciding to go right even though the traffic from left is coming forward. In this case for safety agent should stay Ideal. So None should have biggest positive number.
+<br/><br/>
+<strong>We could futher train our agent for more training trials to overcome these kind of sub-optimal polices.</strong></p>
 <hr style=" height: 5px;   border-style: solid;   border-color: #8c8b8b;   border-width: 1px 0 0 0;   border-radius: 20px; "/>
 </div>
 </div>

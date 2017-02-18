@@ -1,0 +1,273 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+%matplotlib inline
+plt.rcParams['figure.figsize'] = (16.0, 4.0)
+
+from scipy.io import loadmat
+
+def load_data(path):
+    data = loadmat(path)
+    return data['X'], data['y']
+
+data_train_32x32_mat = 'data/train_32x32.mat'
+data_test_32x32_mat = 'data/test_32x32.mat'
+data_extra_32x32_mat = 'data/extra_32x32.mat'
+
+dict_train_X_32x32, dict_train_Y_32x32 = load_data(data_train_32x32_mat)
+dict_test_X_32x32, dict_test_Y_32x32 = load_data(data_test_32x32_mat)
+dict_extra_X_32x32, dict_extra_Y_32x32 = load_data(data_extra_32x32_mat)
+
+print("Training", dict_train_X_32x32.shape, dict_train_Y_32x32.shape)
+print("Test", dict_test_X_32x32.shape, dict_test_Y_32x32.shape)
+print('Extra', dict_extra_X_32x32.shape, dict_extra_Y_32x32.shape)
+
+
+# Transpose the image arrays
+dict_train_X_32x32, dict_train_Y_32x32 = dict_train_X_32x32.transpose((3,0,1,2)), dict_train_Y_32x32[:,0]
+dict_test_X_32x32, dict_test_Y_32x32 = dict_test_X_32x32.transpose((3,0,1,2)), dict_test_Y_32x32[:,0]
+dict_extra_X_32x32, dict_extra_Y_32x32 = dict_extra_X_32x32.transpose((3,0,1,2)), dict_extra_Y_32x32[:,0]
+
+print("Training", dict_train_X_32x32.shape)
+print("Test", dict_test_X_32x32.shape)
+print("Extra", dict_extra_X_32x32.shape)
+print('')
+
+# Calculate the total number of images
+image_count_in_all_datasets = dict_train_X_32x32.shape[0] + dict_test_X_32x32.shape[0] + dict_extra_X_32x32.shape[0]
+
+print("Total Number of Images", str(image_count_in_all_datasets))
+#############################################################
+def plot_images(image_to_plot, labels, nrows, ncols):
+    """ Plot nrows x ncols images
+    """
+    fig, axes = plt.subplots(nrows, ncols)
+    for i, ax in enumerate(axes.flat): 
+        if image_to_plot[i].shape == (32, 32, 3):
+            ax.imshow(image_to_plot[i])
+        else:
+            ax.imshow(image_to_plot[i,:,:,0])
+        ax.set_xticks([]); ax.set_yticks([])
+        ax.set_title(labels[i])
+
+#############################################################
+# Plot some training set images
+plot_images(dict_train_X_32x32, dict_train_Y_32x32, 2, 8)
+
+# Plot some test set images
+plot_images(dict_test_X_32x32, dict_test_Y_32x32, 2, 8)
+
+# Plot some extra set images
+plot_images(dict_extra_X_32x32, dict_extra_Y_32x32, 2, 8)
+
+print(np.unique(dict_train_Y_32x32))
+
+#############################################################
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True)
+
+fig.suptitle('Class Distribution', fontsize=14, fontweight='bold', y=1.05)
+
+ax1.hist(dict_train_Y_32x32, bins=10)
+ax1.set_title("Training set")
+ax1.set_xlim(1, 10)
+
+ax2.hist(dict_test_Y_32x32, color='g', bins=10)
+ax2.set_title("Test set")
+
+ax3.hist(dict_extra_Y_32x32, color='r', bins=10);
+ax3.set_title("Extra set");
+
+fig.tight_layout()
+#############################################################
+
+dict_train_Y_32x32[dict_train_Y_32x32 == 10] = 0
+dict_test_Y_32x32[dict_test_Y_32x32 == 10] = 0
+dict_extra_Y_32x32[dict_extra_Y_32x32 == 10] = 0
+
+
+#############################################################
+def balanced_subsample(y, s):
+    """Return a balanced subsample of the population"""
+    sample = []
+    # For every label in the dataset
+    for label in np.unique(y):
+        # Get the index of all images with a specific label
+        images = np.where(y==label)[0]
+        # Draw a random sample from the images
+        random_sample = np.random.choice(images, size=s, replace=False)
+        # Add the random sample to our subsample list
+        sample += random_sample.tolist()
+    return sample
+#############################################################
+# Pick 400 samples per class from the training samples
+train_samples = balanced_subsample(dict_train_Y_32x32, 400)
+# Pick 200 samples per class from the extra dataset
+extra_samples = balanced_subsample(dict_extra_Y_32x32, 200)
+
+X_val, y_val = np.copy(dict_train_X_32x32[train_samples]), np.copy(dict_train_Y_32x32[train_samples])
+
+# Remove the samples to avoid duplicates
+dict_train_X_32x32 = np.delete(dict_train_X_32x32, train_samples, axis=0)
+dict_train_Y_32x32 = np.delete(dict_train_Y_32x32, train_samples, axis=0)
+
+X_val = np.concatenate([X_val, np.copy(dict_extra_X_32x32[extra_samples])])
+y_val = np.concatenate([y_val, np.copy(dict_extra_Y_32x32[extra_samples])])
+
+# Remove the samples to avoid duplicates
+dict_extra_X_32x32 = np.delete(dict_extra_X_32x32, extra_samples, axis=0)
+dict_extra_Y_32x32 = np.delete(dict_extra_Y_32x32, extra_samples, axis=0)
+
+dict_train_X_32x32 = np.concatenate([dict_train_X_32x32, dict_extra_X_32x32])
+dict_train_Y_32x32 = np.concatenate([dict_train_Y_32x32, dict_extra_Y_32x32])
+dict_test_X_32x32, dict_test_Y_32x32 = dict_test_X_32x32, dict_test_Y_32x32
+
+print("Training", dict_train_X_32x32.shape, dict_train_Y_32x32.shape)
+print("Test", dict_test_X_32x32.shape, dict_test_Y_32x32.shape)
+print('Validation', X_val.shape, y_val.shape)
+#############################################################
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True)
+
+fig.suptitle('Class Distribution', fontsize=14, fontweight='bold', y=1.05)
+
+ax1.hist(dict_train_Y_32x32, bins=10)
+ax1.set_title("Training set")
+ax1.set_xlim(0, 9)
+
+ax2.hist(dict_test_Y_32x32, color='g', bins=10)
+ax2.set_title("Test set")
+
+ax3.hist(y_val, color='r', bins=10);
+ax3.set_title("Validation set");
+
+fig.tight_layout()
+#############################################################
+# Assert that we did not remove or add any duplicates
+assert(image_count_in_all_datasets == dict_train_X_32x32.shape[0] + dict_test_X_32x32.shape[0] + X_val.shape[0])
+
+# Display some samples images from the training set
+plot_images(dict_train_X_32x32, dict_train_Y_32x32, 2, 10)
+
+#############################################################
+# Display some samples images from the test set
+plot_images(dict_test_X_32x32, dict_test_Y_32x32, 2, 10)
+
+
+#############################################################
+# Display some samples images from the validation set
+plot_images(X_val, y_val, 2, 10)
+#############################################################
+suffixes = ['B', 'KB', 'MB', 'GB']
+
+def humansize(nbytes):
+    if nbytes == 0: return '0 B'
+    i = 0
+    while nbytes >= 1024:
+        nbytes /= 1024.
+        i += 1
+    f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
+    return '%s %s' % (f, suffixes[i])
+#############################################################
+def rgb2gray(images):
+    """Convert images from rbg to grayscale
+    """
+    return np.expand_dims(np.dot(images, [0.2989, 0.5870, 0.1140]), axis=3)
+
+# Transform the images to greyscale
+train_greyscale = rgb2gray(dict_train_X_32x32).astype(np.float32)
+test_greyscale = rgb2gray(dict_test_X_32x32).astype(np.float32)
+valid_greyscale = rgb2gray(X_val).astype(np.float32)
+
+# Keep the size before convertion
+size_before = (dict_train_X_32x32.nbytes, dict_test_X_32x32.nbytes, X_val.nbytes)
+
+# Size after transformation
+size_after = (train_greyscale.nbytes, test_greyscale.nbytes, valid_greyscale.nbytes)
+
+print("Dimensions")
+print("Training set", dict_train_X_32x32.shape, train_greyscale.shape)
+print("Test set", dict_test_X_32x32.shape, test_greyscale.shape)
+print("Validation set", X_val.shape, valid_greyscale.shape)
+print('')
+
+print("Data Type")
+print("Training set", dict_train_X_32x32.dtype, train_greyscale.dtype)
+print("Test set", dict_test_X_32x32.dtype, test_greyscale.dtype)
+print("Validation set", X_val.dtype, valid_greyscale.dtype)
+print('')
+
+print("Dataset Size")
+print("Training set", humansize(size_before[0]), humansize(size_after[0]))
+print("Test set", humansize(size_before[1]), humansize(size_after[1]))
+print("Validation set", humansize(size_before[2]), humansize(size_after[2]))
+
+plot_images(dict_train_X_32x32, dict_train_Y_32x32, 1, 10)
+plot_images(train_greyscale, dict_train_Y_32x32, 1, 10)
+#############################################################
+from sklearn.preprocessing import OneHotEncoder
+ 
+# Fit the OneHotEncoder
+enc = OneHotEncoder().fit(dict_train_Y_32x32.reshape(-1, 1))
+
+# Transform the label values to a one-hot-encoding scheme
+dict_train_Y_32x32 = enc.transform(dict_train_Y_32x32.reshape(-1, 1)).toarray()
+dict_test_Y_32x32 = enc.transform(dict_test_Y_32x32.reshape(-1, 1)).toarray()
+y_val = enc.transform(y_val.reshape(-1, 1)).toarray()
+
+print("Training set", dict_train_Y_32x32.shape)
+print("Test set", dict_test_Y_32x32.shape)
+print("Training set", y_val.shape)
+
+#############################################################
+import h5py
+
+# Create file
+h5f = h5py.File('data/SVHN_single.h5', 'w')
+
+# Store the datasets
+h5f.create_dataset('dict_train_X_32x32', data=dict_train_X_32x32)
+h5f.create_dataset('dict_train_Y_32x32', data=train_labels)
+h5f.create_dataset('dict_test_X_32x32', data=dict_test_X_32x32)
+h5f.create_dataset('dict_test_Y_32x32', data=dict_test_Y_32x32)
+h5f.create_dataset('X_val', data=X_val)
+h5f.create_dataset('y_val', data=y_val)
+
+# Close the file
+h5f.close()
+#############################################################
+import h5py
+
+# Create file
+h5f = h5py.File('data/SVHN_single_grey.h5', 'w')
+
+# Store the datasets
+h5f.create_dataset('dict_train_X_32x32', data=train_greyscale)
+h5f.create_dataset('dict_train_Y_32x32', data=train_labels)
+h5f.create_dataset('dict_test_X_32x32', data=test_greyscale)
+h5f.create_dataset('dict_test_Y_32x32', data=dict_test_Y_32x32)
+h5f.create_dataset('X_val', data=valid_greyscale)
+h5f.create_dataset('y_val', data=y_val)
+
+# Close the file
+h5f.close()
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
+
+#############################################################
